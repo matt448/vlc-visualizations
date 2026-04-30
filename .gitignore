@@ -1,0 +1,48 @@
+# CMake build directories
+build/
+build*/
+cmake-build-*/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+DartConfiguration.tcl
+
+# Ninja generated files
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
+
+# Compiled binaries and objects
+*.a
+*.dll
+*.dll.a
+*.exe
+*.lib
+*.obj
+*.o
+*.pdb
+*.so
+
+# Local editor and OS files
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local logs and scratch files
+*.err
+*.log
+*.tmp
+
+# Local research/test artifacts
+vlc-source-review/
+vlc-help.txt
+*.mp3
