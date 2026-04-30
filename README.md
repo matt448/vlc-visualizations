@@ -29,6 +29,29 @@ That means you need a 64-bit Windows build of this plugin. See [docs/WINDOWS.md]
 
 On many systems, VLC runtime installers do not include the headers needed to build plugins. If `pkg-config --cflags vlc-plugin` fails, install or build the VLC SDK/development package first.
 
+## Download A Prebuilt DLL
+
+Prebuilt Windows x64 DLLs are available from the [GitHub Releases page](https://github.com/matt448/vlc-visualizations/releases).
+
+1. Open the latest release.
+2. Download `libtrackinfo_visualizer_plugin-*-win64.dll` from the release assets.
+3. Rename it to `libtrackinfo_visualizer_plugin.dll`.
+4. Copy it into your VLC user plugin folder:
+
+```text
+%APPDATA%\vlc\plugins\visualization\
+```
+
+Create the `plugins\visualization` folders if they do not exist.
+
+Refresh VLC's plugin cache:
+
+```powershell
+& "C:\Program Files\VideoLAN\VLC\vlc.exe" --reset-plugins-cache --intf dummy --dummy-quiet vlc://quit
+```
+
+Then start VLC and select `Spectrum Info` from the audio visualization menu, or launch VLC with `--audio-visual=spectrum_info`.
+
 ## Build
 
 ```powershell
