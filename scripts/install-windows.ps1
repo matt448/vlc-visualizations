@@ -42,3 +42,8 @@ if (Test-Path $vlcCacheGen) {
 } else {
     Write-Warning "Could not find VLC tools under '$VlcDir'. Refresh VLC's plugin cache manually."
 }
+
+Write-Host ""
+Write-Host "When launching VLC from this user plugin folder, set:"
+Write-Host '  $env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"'
+Write-Host "Then use --audio-visual=spectrum_info or --audio-visual=led_segments."

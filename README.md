@@ -49,7 +49,13 @@ Refresh VLC's plugin cache:
 & "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "$env:APPDATA\vlc\plugins"
 ```
 
-Then launch VLC from the command line with one of the visualization shortcuts.
+When using the user plugin folder, set `VLC_PLUGIN_PATH` in the same PowerShell session before launching VLC:
+
+```powershell
+$env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
+```
+
+Then launch VLC from that same PowerShell session with one of the visualization shortcuts.
 
 ## Build
 
@@ -86,12 +92,14 @@ Use a visualization from the command line with `--audio-visual=<shortcut>`.
 Spectrum Info:
 
 ```powershell
+$env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=spectrum_info path\to\song.mp3
 ```
 
 LED Segments:
 
 ```powershell
+$env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=led_segments path\to\song.mp3
 ```
 
