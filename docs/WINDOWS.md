@@ -90,4 +90,4 @@ $env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=spectrum_info path\to\song.mp3
 ```
 
-You can also select `Spectrum Info` from VLC's audio visualization menu after the plugin cache has refreshed. The older `trackinfo_visualizer` shortcut is still accepted for command-line compatibility.
+VLC's audio visualization menu is hard-coded and may not show third-party visualization plugins. Use `--audio-visual=spectrum_info` from the command line to start playback with this visualizer. The older `trackinfo_visualizer` shortcut is still accepted for command-line compatibility.

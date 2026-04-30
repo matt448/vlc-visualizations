@@ -50,7 +50,7 @@ Refresh VLC's plugin cache:
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --reset-plugins-cache --intf dummy --dummy-quiet vlc://quit
 ```
 
-Then start VLC and select `Spectrum Info` from the audio visualization menu, or launch VLC with `--audio-visual=spectrum_info`.
+Then launch VLC from the command line with `--audio-visual=spectrum_info`.
 
 ## Build
 
@@ -79,7 +79,7 @@ Install the DLL into your VLC user plugin folder and refresh VLC's plugin cache:
 
 If VLC does not discover the user plugin folder, copy the built DLL into `C:\Program Files\VideoLAN\VLC\plugins\visualization\` from an Administrator PowerShell and run `vlc-cache-gen.exe`.
 
-The visualization appears as `Spectrum Info`. The command-line shortcuts are `spectrum_info` and `trackinfo_visualizer`.
+Use the visualization from the command line with `--audio-visual=spectrum_info`. The older `trackinfo_visualizer` shortcut is also accepted for command-line compatibility.
 
 ## Run
 
@@ -89,7 +89,7 @@ From the command line:
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=spectrum_info path\to\song.mp3
 ```
 
-Or open VLC and select the visualization from the audio visualization menu after the plugin cache has been refreshed.
+VLC's audio visualization menu is hard-coded and may not show third-party visualization plugins. Use the command-line option above to start playback with this visualizer.
 
 ## Notes
 
