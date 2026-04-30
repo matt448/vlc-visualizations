@@ -2,6 +2,8 @@
 
 A native VLC visualization plugin that draws a Spectrum-style frequency visualization inside VLC's video area and keeps the current track/stream title visible.
 
+![Spectrum Info visualization running in VLC](docs/screenshots/trackinfo_visualizer_screenshot.png)
+
 This scaffold targets VLC 3.x on Windows. It uses VLC's visualization/audio-filter plugin API for audio samples and VLC's video-output request API for rendering, matching the built-in Spectrum visualizer's placement inside the VLC window.
 
 Your current VLC path is assumed to be:
