@@ -35,27 +35,19 @@ Prebuilt Windows x64 DLLs are available from the [GitHub Releases page](https://
 1. Open the latest release.
 2. Download the `*-win64.dll` files from the release assets.
 3. Rename them to remove the release suffix. For example, `libtrackinfo_visualizer_plugin-v0.1.0-win64.dll` becomes `libtrackinfo_visualizer_plugin.dll`.
-4. Copy the DLLs into your VLC user plugin folder:
+4. From an Administrator PowerShell, copy the DLLs into VLC's application plugin folder:
 
 ```text
-%APPDATA%\vlc\plugins\visualization\
+C:\Program Files\VideoLAN\VLC\plugins\visualization\
 ```
-
-Create the `plugins\visualization` folders if they do not exist.
 
 Refresh VLC's plugin cache:
 
 ```powershell
-& "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "$env:APPDATA\vlc\plugins"
+& "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "C:\Program Files\VideoLAN\VLC\plugins"
 ```
 
-When using the user plugin folder, set `VLC_PLUGIN_PATH` in the same PowerShell session before launching VLC:
-
-```powershell
-$env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
-```
-
-Then launch VLC from that same PowerShell session with one of the visualization shortcuts.
+Then launch VLC with one of the visualization shortcuts.
 
 ## Build
 
@@ -73,17 +65,19 @@ libled_segment_visualizer_plugin.dll
 
 ## Install
 
-Install the DLLs into your VLC user plugin folder and refresh VLC's plugin cache:
+Install the DLLs into VLC's application plugin folder and refresh VLC's plugin cache:
 
 ```text
-%APPDATA%\vlc\plugins\visualization\
+C:\Program Files\VideoLAN\VLC\plugins\visualization\
 ```
 
 ```powershell
-.\scripts\install-windows.ps1 -BuildDir build -VlcDir "C:\Program Files\VideoLAN\VLC"
+Copy-Item ".\build\libtrackinfo_visualizer_plugin.dll" "C:\Program Files\VideoLAN\VLC\plugins\visualization\" -Force
+Copy-Item ".\build\libled_segment_visualizer_plugin.dll" "C:\Program Files\VideoLAN\VLC\plugins\visualization\" -Force
+& "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "C:\Program Files\VideoLAN\VLC\plugins"
 ```
 
-If VLC does not discover the user plugin folder, copy the built DLL into `C:\Program Files\VideoLAN\VLC\plugins\visualization\` from an Administrator PowerShell and run `vlc-cache-gen.exe`.
+Run those install commands from an Administrator PowerShell.
 
 Use a visualization from the command line with `--audio-visual=<shortcut>`.
 
@@ -92,14 +86,12 @@ Use a visualization from the command line with `--audio-visual=<shortcut>`.
 Spectrum Info:
 
 ```powershell
-$env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=spectrum_info path\to\song.mp3
 ```
 
 LED Segments:
 
 ```powershell
-$env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=led_segments path\to\song.mp3
 ```
 

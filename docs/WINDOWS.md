@@ -59,19 +59,13 @@ build/libled_segment_visualizer_plugin.dll
 
 ## Install
 
-From normal Windows PowerShell in this repo:
-
-```powershell
-.\scripts\install-windows.ps1 -BuildDir build -VlcDir "C:\Program Files\VideoLAN\VLC"
-```
-
-The script installs the plugins to:
+From an Administrator PowerShell in this repo, copy the DLLs into VLC's application plugin folder:
 
 ```text
-%APPDATA%\vlc\plugins\visualization\
+C:\Program Files\VideoLAN\VLC\plugins\visualization\
 ```
 
-If your VLC build does not scan the user plugin folder, install into VLC's application plugin folder from an Administrator PowerShell. Run this from the repository root, or adjust the DLL path to match your build directory:
+Run this from the repository root, or adjust the DLL path to match your build directory:
 
 ```powershell
 Copy-Item ".\build\libtrackinfo_visualizer_plugin.dll" "C:\Program Files\VideoLAN\VLC\plugins\visualization\" -Force
@@ -79,33 +73,18 @@ Copy-Item ".\build\libled_segment_visualizer_plugin.dll" "C:\Program Files\Video
 & "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "C:\Program Files\VideoLAN\VLC\plugins"
 ```
 
-When installing into `%APPDATA%\vlc\plugins\visualization`, refresh the user plugin cache directly:
-
-```powershell
-& "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "$env:APPDATA\vlc\plugins"
-```
-
-You can also test without administrator rights by setting `VLC_PLUGIN_PATH` for that launch:
-
-```powershell
-$env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
-& "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=led_segments path\to\song.mp3
-```
-
 ## Run
 
 Spectrum Info:
 
 ```powershell
-$env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=spectrum_info path\to\song.mp3
 ```
 
 LED Segments:
 
 ```powershell
-$env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=led_segments path\to\song.mp3
 ```
 
-VLC's audio visualization menu is hard-coded and may not show third-party visualization plugins. Use `--audio-visual=spectrum_info` or `--audio-visual=led_segments` from the command line to start playback with these visualizers. If the DLLs are installed under `%APPDATA%\vlc\plugins`, set `VLC_PLUGIN_PATH` as shown above so VLC loads the user plugin directory. The older `trackinfo_visualizer` shortcut is still accepted for command-line compatibility.
+VLC's audio visualization menu is hard-coded and may not show third-party visualization plugins. Use `--audio-visual=spectrum_info` or `--audio-visual=led_segments` from the command line to start playback with these visualizers. The older `trackinfo_visualizer` shortcut is still accepted for command-line compatibility.

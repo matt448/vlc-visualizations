@@ -23,7 +23,7 @@ if (-not $pluginPaths) {
     throw "Could not find VLC plugin DLLs under '$BuildDir'. Build the project first."
 }
 
-$installDir = Join-Path $env:APPDATA "vlc\plugins\visualization"
+$installDir = Join-Path $VlcDir "plugins\visualization"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 
 foreach ($pluginPath in $pluginPaths) {
@@ -34,16 +34,11 @@ foreach ($pluginPath in $pluginPaths) {
 $vlcExe = Join-Path $VlcDir "vlc.exe"
 $vlcCacheGen = Join-Path $VlcDir "vlc-cache-gen.exe"
 if (Test-Path $vlcCacheGen) {
-    & $vlcCacheGen (Join-Path $env:APPDATA "vlc\plugins")
-    Write-Host "Refreshed VLC user plugin cache."
+    & $vlcCacheGen (Join-Path $VlcDir "plugins")
+    Write-Host "Refreshed VLC plugin cache."
 } elseif (Test-Path $vlcExe) {
     & $vlcExe --reset-plugins-cache --intf dummy --dummy-quiet vlc://quit
-    Write-Host "Refreshed VLC application plugin cache."
+    Write-Host "Refreshed VLC plugin cache."
 } else {
     Write-Warning "Could not find VLC tools under '$VlcDir'. Refresh VLC's plugin cache manually."
 }
-
-Write-Host ""
-Write-Host "When launching VLC from this user plugin folder, set:"
-Write-Host '  $env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"'
-Write-Host "Then use --audio-visual=spectrum_info or --audio-visual=led_segments."
