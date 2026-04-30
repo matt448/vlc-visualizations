@@ -46,7 +46,7 @@ Create the `plugins\visualization` folders if they do not exist.
 Refresh VLC's plugin cache:
 
 ```powershell
-& "C:\Program Files\VideoLAN\VLC\vlc.exe" --reset-plugins-cache --intf dummy --dummy-quiet vlc://quit
+& "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "$env:APPDATA\vlc\plugins"
 ```
 
 Then launch VLC from the command line with one of the visualization shortcuts.

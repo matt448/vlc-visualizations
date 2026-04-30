@@ -79,6 +79,12 @@ Copy-Item ".\build\libled_segment_visualizer_plugin.dll" "C:\Program Files\Video
 & "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "C:\Program Files\VideoLAN\VLC\plugins"
 ```
 
+When installing into `%APPDATA%\vlc\plugins\visualization`, refresh the user plugin cache directly:
+
+```powershell
+& "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "$env:APPDATA\vlc\plugins"
+```
+
 You can also test without administrator rights by setting `VLC_PLUGIN_PATH` for that launch:
 
 ```powershell

@@ -32,9 +32,13 @@ foreach ($pluginPath in $pluginPaths) {
 }
 
 $vlcExe = Join-Path $VlcDir "vlc.exe"
-if (Test-Path $vlcExe) {
+$vlcCacheGen = Join-Path $VlcDir "vlc-cache-gen.exe"
+if (Test-Path $vlcCacheGen) {
+    & $vlcCacheGen (Join-Path $env:APPDATA "vlc\plugins")
+    Write-Host "Refreshed VLC user plugin cache."
+} elseif (Test-Path $vlcExe) {
     & $vlcExe --reset-plugins-cache --intf dummy --dummy-quiet vlc://quit
-    Write-Host "Refreshed VLC plugin cache."
+    Write-Host "Refreshed VLC application plugin cache."
 } else {
-    Write-Warning "Could not find VLC at '$vlcExe'. Refresh VLC's plugin cache manually."
+    Write-Warning "Could not find VLC tools under '$VlcDir'. Refresh VLC's plugin cache manually."
 }
