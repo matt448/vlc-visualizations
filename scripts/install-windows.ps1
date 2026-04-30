@@ -7,21 +7,29 @@ param(
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$candidatePaths = @(
-    (Join-Path $projectRoot "$BuildDir\libtrackinfo_visualizer_plugin.dll"),
-    (Join-Path $projectRoot "$BuildDir\$Configuration\libtrackinfo_visualizer_plugin.dll")
-)
+$buildPath = Join-Path $projectRoot $BuildDir
+$configurationPath = Join-Path $buildPath $Configuration
 
-$pluginPath = $candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
-if (-not $pluginPath) {
-    throw "Could not find libtrackinfo_visualizer_plugin.dll under '$BuildDir'. Build the project first."
+$pluginPaths = @()
+if (Test-Path $buildPath) {
+    $pluginPaths += Get-ChildItem -Path $buildPath -Filter "lib*_plugin.dll" -File
+}
+if (Test-Path $configurationPath) {
+    $pluginPaths += Get-ChildItem -Path $configurationPath -Filter "lib*_plugin.dll" -File
+}
+
+$pluginPaths = $pluginPaths | Sort-Object FullName -Unique
+if (-not $pluginPaths) {
+    throw "Could not find VLC plugin DLLs under '$BuildDir'. Build the project first."
 }
 
 $installDir = Join-Path $env:APPDATA "vlc\plugins\visualization"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 
-Copy-Item -Path $pluginPath -Destination $installDir -Force
-Write-Host "Installed plugin to $installDir"
+foreach ($pluginPath in $pluginPaths) {
+    Copy-Item -Path $pluginPath.FullName -Destination $installDir -Force
+    Write-Host "Installed $($pluginPath.Name) to $installDir"
+}
 
 $vlcExe = Join-Path $VlcDir "vlc.exe"
 if (Test-Path $vlcExe) {

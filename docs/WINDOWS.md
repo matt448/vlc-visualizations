@@ -50,10 +50,11 @@ cmake -S . -B build -G "MinGW Makefiles" \
 cmake --build build
 ```
 
-The plugin DLL should be:
+The plugin DLLs should be:
 
 ```text
 build/libtrackinfo_visualizer_plugin.dll
+build/libled_segment_visualizer_plugin.dll
 ```
 
 ## Install
@@ -64,7 +65,7 @@ From normal Windows PowerShell in this repo:
 .\scripts\install-windows.ps1 -BuildDir build -VlcDir "C:\Program Files\VideoLAN\VLC"
 ```
 
-The script installs the plugin to:
+The script installs the plugins to:
 
 ```text
 %APPDATA%\vlc\plugins\visualization\
@@ -74,6 +75,7 @@ If your VLC build does not scan the user plugin folder, install into VLC's appli
 
 ```powershell
 Copy-Item ".\build\libtrackinfo_visualizer_plugin.dll" "C:\Program Files\VideoLAN\VLC\plugins\visualization\" -Force
+Copy-Item ".\build\libled_segment_visualizer_plugin.dll" "C:\Program Files\VideoLAN\VLC\plugins\visualization\" -Force
 & "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "C:\Program Files\VideoLAN\VLC\plugins"
 ```
 
@@ -81,13 +83,21 @@ You can also test without administrator rights by setting `VLC_PLUGIN_PATH` for 
 
 ```powershell
 $env:VLC_PLUGIN_PATH = "$env:APPDATA\vlc\plugins"
-& "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=trackinfo_visualizer path\to\song.mp3
+& "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=led_segments path\to\song.mp3
 ```
 
 ## Run
+
+Spectrum Info:
 
 ```powershell
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=spectrum_info path\to\song.mp3
 ```
 
-VLC's audio visualization menu is hard-coded and may not show third-party visualization plugins. Use `--audio-visual=spectrum_info` from the command line to start playback with this visualizer. The older `trackinfo_visualizer` shortcut is still accepted for command-line compatibility.
+LED Segments:
+
+```powershell
+& "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=led_segments path\to\song.mp3
+```
+
+VLC's audio visualization menu is hard-coded and may not show third-party visualization plugins. Use `--audio-visual=spectrum_info` or `--audio-visual=led_segments` from the command line to start playback with these visualizers. The older `trackinfo_visualizer` shortcut is still accepted for command-line compatibility.

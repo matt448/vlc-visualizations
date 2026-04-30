@@ -39,7 +39,11 @@ static inline int poll(struct pollfd *fds, unsigned nfds, int timeout)
 
 #include <windows.h>
 
+#ifdef LED_SEGMENT_VISUALIZER
+#define BAR_COUNT 31
+#else
 #define BAR_COUNT 80
+#endif
 #define FFT_SIZE 512
 #define VIDEO_WIDTH 800
 #define VIDEO_HEIGHT 500
@@ -48,6 +52,12 @@ static inline int poll(struct pollfd *fds, unsigned nfds, int timeout)
 #define SPECTRUM_BAR_DECREASE 5.0f
 
 static const int spectrum_xscale[BAR_COUNT + 1] = {
+#ifdef LED_SEGMENT_VISUALIZER
+    0, 1, 2, 3, 4, 5, 6, 7,
+    8, 9, 11, 14, 17, 21, 26, 32,
+    40, 50, 63, 79, 99, 124, 155, 194,
+    216, 231, 240, 247, 251, 253, 254, 255
+#else
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
     10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -57,7 +67,17 @@ static const int spectrum_xscale[BAR_COUNT + 1] = {
     61, 63, 67, 72, 77, 82, 87, 93, 99, 105,
     110, 115, 121, 130, 141, 152, 163, 174, 185, 200,
     255
+#endif
 };
+
+#ifdef LED_SEGMENT_VISUALIZER
+static const wchar_t *frequency_labels[BAR_COUNT] = {
+    L"20", L"25", L"31.5", L"40", L"50", L"63", L"80", L"100",
+    L"125", L"160", L"200", L"250", L"315", L"400", L"500", L"630",
+    L"800", L"1K", L"1.25K", L"1.6K", L"2K", L"2.5K", L"3.15K", L"4K",
+    L"5K", L"6.3K", L"8K", L"10K", L"12.5K", L"16K", L"20K"
+};
+#endif
 
 struct filter_sys_t
 {
@@ -79,11 +99,20 @@ static void Close(vlc_object_t *);
 static block_t *Filter(filter_t *, block_t *);
 
 vlc_module_begin()
+#ifdef LED_SEGMENT_VISUALIZER
+    set_shortname("LED Segments")
+    set_description("31-band LED segment visualization with frequency labels")
+#else
     set_shortname("Spectrum Info")
     set_description("Spectrum visualization with persistent track information")
+#endif
     set_capability("visualization", 0)
     set_subcategory(SUBCAT_AUDIO_VISUAL)
+#ifdef LED_SEGMENT_VISUALIZER
+    add_shortcut("led_segments", "led_segment_visualizer")
+#else
     add_shortcut("spectrum_info", "trackinfo_visualizer")
+#endif
     set_callbacks(Open, Close)
 vlc_module_end()
 
@@ -310,6 +339,61 @@ static void fill_spectrum_bar(HDC dc, int x, int bar_width, int graph_top, int g
                            bar_color_at_y(segment.bottom, graph_top, graph_height));
 }
 
+#ifdef LED_SEGMENT_VISUALIZER
+static COLORREF led_segment_color(int segment, int segment_count)
+{
+    float ratio = (float)(segment + 1) / (float)segment_count;
+
+    if (ratio > 0.86f)
+        return RGB(255, 42, 32);
+    if (ratio > 0.72f)
+        return RGB(255, 216, 0);
+    return RGB(35, 235, 72);
+}
+
+static COLORREF dim_led_color(COLORREF color)
+{
+    return RGB(GetRValue(color) / 12, GetGValue(color) / 12, GetBValue(color) / 12);
+}
+
+static void fill_led_bar(HDC dc, int x, int bar_width, int graph_top, int graph_height,
+                         float value)
+{
+    const int segment_count = 32;
+    const int segment_gap = 3;
+    int segment_height = (graph_height - (segment_count - 1) * segment_gap) / segment_count;
+    int lit_segments;
+
+    if (segment_height < 3)
+        segment_height = 3;
+
+    if (value < 0.0f)
+        value = 0.0f;
+    if (value > 1.0f)
+        value = 1.0f;
+
+    lit_segments = (int)(value * (float)segment_count + 0.5f);
+
+    for (int segment = 0; segment < segment_count; ++segment)
+    {
+        int from_bottom = segment;
+        int y = graph_top + graph_height - (from_bottom + 1) * segment_height - from_bottom * segment_gap;
+        COLORREF base_color = led_segment_color(segment, segment_count);
+        COLORREF color = segment < lit_segments ? base_color : dim_led_color(base_color);
+        HBRUSH brush = CreateSolidBrush(color);
+        RECT rect = {
+            x,
+            y,
+            x + bar_width,
+            y + segment_height
+        };
+
+        FillRect(dc, &rect, brush);
+        DeleteObject(brush);
+    }
+}
+#endif
+
 static void fft_in_place(float *real, float *imag, size_t count)
 {
     for (size_t i = 1, j = 0; i < count; ++i)
@@ -507,19 +591,60 @@ static uint8_t clamp_byte(int value)
 static void draw_native_frame(filter_sys_t *sys)
 {
     float bars[BAR_COUNT];
+#ifndef LED_SEGMENT_VISUALIZER
     wchar_t track_text[512];
+#endif
     RECT rc = { 0, 0, sys->render_width, sys->render_height };
 
     EnterCriticalSection(&sys->lock);
     memcpy(bars, sys->bars, sizeof(bars));
+#ifndef LED_SEGMENT_VISUALIZER
     wcsncpy(track_text, sys->track_text, ARRAYSIZE(track_text) - 1);
     track_text[ARRAYSIZE(track_text) - 1] = L'\0';
+#endif
     LeaveCriticalSection(&sys->lock);
 
     HBRUSH background = CreateSolidBrush(RGB(0, 0, 0));
     FillRect(sys->render_dc, &rc, background);
     DeleteObject(background);
 
+#ifdef LED_SEGMENT_VISUALIZER
+    int label_band = 40;
+    int graph_top = 24;
+    int graph_height = sys->render_height - label_band - graph_top - 12;
+    int gap = 6;
+    int side_pad = 22;
+    int bar_width = (sys->render_width - side_pad * 2 - (BAR_COUNT - 1) * gap) / BAR_COUNT;
+    if (bar_width < 8)
+        bar_width = 8;
+
+    for (int i = 0; i < BAR_COUNT; ++i)
+    {
+        int x = side_pad + i * (bar_width + gap);
+        fill_led_bar(sys->render_dc, x, bar_width, graph_top, graph_height, bars[i]);
+    }
+
+    SetBkMode(sys->render_dc, TRANSPARENT);
+    SetTextColor(sys->render_dc, RGB(230, 235, 232));
+
+    HFONT label_font = CreateFontW(
+        -9, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+        DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+    HGDIOBJ old_font = SelectObject(sys->render_dc, label_font);
+
+    for (int i = 0; i < BAR_COUNT; ++i)
+    {
+        int x = side_pad + i * (bar_width + gap);
+        RECT label_rc = { x - gap / 2, sys->render_height - label_band + 8,
+                          x + bar_width + gap / 2, sys->render_height - 8 };
+        DrawTextW(sys->render_dc, frequency_labels[i], -1, &label_rc,
+                  DT_CENTER | DT_TOP | DT_SINGLELINE | DT_END_ELLIPSIS);
+    }
+
+    SelectObject(sys->render_dc, old_font);
+    DeleteObject(label_font);
+#else
     int text_band = 58;
     int graph_height = sys->render_height - text_band - 18;
     int gap = 2;
@@ -555,6 +680,7 @@ static void draw_native_frame(filter_sys_t *sys)
 
     SelectObject(sys->render_dc, old_font);
     DeleteObject(font);
+#endif
 }
 
 static void copy_bgra_to_i420(filter_sys_t *sys, picture_t *picture)

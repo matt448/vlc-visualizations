@@ -52,42 +52,48 @@ include(CheckIncludeFile)
 set(CMAKE_REQUIRED_INCLUDES ${TRACKINFO_VLC_INCLUDE_DIRS})
 check_include_file("vlc_playlist_legacy.h" HAVE_VLC_PLAYLIST_LEGACY_H)
 
-add_library(trackinfo_visualizer MODULE
-    src/trackinfo_visualizer.c
-)
+function(add_vlc_visualizer target output_name module_string)
+    add_library(${target} MODULE
+        src/trackinfo_visualizer.c
+    )
 
-target_include_directories(trackinfo_visualizer PRIVATE
-    ${TRACKINFO_VLC_INCLUDE_DIRS}
-)
+    target_include_directories(${target} PRIVATE
+        ${TRACKINFO_VLC_INCLUDE_DIRS}
+    )
 
-target_compile_options(trackinfo_visualizer PRIVATE
-    ${TRACKINFO_VLC_CFLAGS_OTHER}
-)
+    target_compile_options(${target} PRIVATE
+        ${TRACKINFO_VLC_CFLAGS_OTHER}
+    )
 
-target_link_directories(trackinfo_visualizer PRIVATE
-    ${TRACKINFO_VLC_LIBRARY_DIRS}
-)
+    target_link_directories(${target} PRIVATE
+        ${TRACKINFO_VLC_LIBRARY_DIRS}
+    )
 
-target_link_libraries(trackinfo_visualizer PRIVATE
-    ${TRACKINFO_VLC_LIBRARIES}
-    ws2_32
-    user32
-    gdi32
-    msimg32
-)
+    target_link_libraries(${target} PRIVATE
+        ${TRACKINFO_VLC_LIBRARIES}
+        ws2_32
+        user32
+        gdi32
+        msimg32
+    )
 
-if(HAVE_VLC_PLAYLIST_LEGACY_H)
-    target_compile_definitions(trackinfo_visualizer PRIVATE HAVE_VLC_PLAYLIST_LEGACY_H=1)
-endif()
+    if(HAVE_VLC_PLAYLIST_LEGACY_H)
+        target_compile_definitions(${target} PRIVATE HAVE_VLC_PLAYLIST_LEGACY_H=1)
+    endif()
 
-target_compile_definitions(trackinfo_visualizer PRIVATE
-    MODULE_STRING=\"trackinfo_visualizer\"
-    WIN32_LEAN_AND_MEAN
-    UNICODE
-    _UNICODE
-)
+    target_compile_definitions(${target} PRIVATE
+        MODULE_STRING=\"${module_string}\"
+        WIN32_LEAN_AND_MEAN
+        UNICODE
+        _UNICODE
+    )
 
-set_target_properties(trackinfo_visualizer PROPERTIES
-    PREFIX "lib"
-    OUTPUT_NAME "trackinfo_visualizer_plugin"
-)
+    set_target_properties(${target} PROPERTIES
+        PREFIX "lib"
+        OUTPUT_NAME "${output_name}"
+    )
+endfunction()
+
+add_vlc_visualizer(trackinfo_visualizer trackinfo_visualizer_plugin trackinfo_visualizer)
+add_vlc_visualizer(led_segment_visualizer led_segment_visualizer_plugin led_segment_visualizer)
+target_compile_definitions(led_segment_visualizer PRIVATE LED_SEGMENT_VISUALIZER=1)
