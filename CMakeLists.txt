@@ -52,9 +52,10 @@ include(CheckIncludeFile)
 set(CMAKE_REQUIRED_INCLUDES ${TRACKINFO_VLC_INCLUDE_DIRS})
 check_include_file("vlc_playlist_legacy.h" HAVE_VLC_PLAYLIST_LEGACY_H)
 
-function(add_vlc_visualizer target output_name module_string)
+function(add_vlc_visualizer target output_name module_string visualizer_source)
     add_library(${target} MODULE
-        src/trackinfo_visualizer.c
+        ${visualizer_source}
+        src/visualizer_common.c
     )
 
     target_include_directories(${target} PRIVATE
@@ -94,6 +95,5 @@ function(add_vlc_visualizer target output_name module_string)
     )
 endfunction()
 
-add_vlc_visualizer(trackinfo_visualizer trackinfo_visualizer_plugin trackinfo_visualizer)
-add_vlc_visualizer(led_segment_visualizer led_segment_visualizer_plugin led_segment_visualizer)
-target_compile_definitions(led_segment_visualizer PRIVATE LED_SEGMENT_VISUALIZER=1)
+add_vlc_visualizer(trackinfo_visualizer trackinfo_visualizer_plugin trackinfo_visualizer src/spectrum_info.c)
+add_vlc_visualizer(led_segment_visualizer led_segment_visualizer_plugin led_segment_visualizer src/led_segments.c)

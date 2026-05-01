@@ -2,7 +2,13 @@
 
 A small collection of native VLC visualization plugins for Windows.
 
+Spectrum Info:
+
 ![Spectrum Info visualization running in VLC](docs/screenshots/trackinfo_visualizer_screenshot.png)
+
+LED Segments:
+
+![LED Segments visualization running in VLC](docs/screenshots/led_segment_visualizer_screenshot.png)
 
 This scaffold targets VLC 3.x on Windows. It uses VLC's visualization/audio-filter plugin API for audio samples and VLC's video-output request API for rendering, matching the built-in Spectrum visualizer's placement inside the VLC window.
 
@@ -14,10 +20,10 @@ C:\Program Files\VideoLAN\VLC
 
 That means you need 64-bit Windows builds of these plugins. See [docs/WINDOWS.md](docs/WINDOWS.md) for the Windows-specific build flow.
 
-## What It Shows
+## Visualizers
 
 - `spectrum_info`: Spectrum-style frequency bars derived from the current audio buffer, with persistent current track/stream text.
-- `led_segments`: 31-band LED-segment visualization with frequency labels and green, yellow, and red level sections.
+- `led_segments`: 31-band LED-segment visualization with frequency labels, current track/stream text, and green, yellow, and red level sections.
 
 ## Prerequisites
 
