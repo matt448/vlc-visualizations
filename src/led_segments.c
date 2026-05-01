@@ -23,8 +23,8 @@ static const float frequency_centers[BAR_COUNT] = {
 static const wchar_t *frequency_labels[BAR_COUNT] = {
     L"20", L"25", L"31.5", L"40", L"50", L"63", L"80", L"100",
     L"125", L"160", L"200", L"250", L"315", L"400", L"500", L"630",
-    L"800", L"1K", L"1K", L"2K", L"2K", L"3K", L"3K", L"4K",
-    L"5K", L"6K", L"8K", L"10K", L"12K", L"16K", L"20K"
+    L"800", L"1K", L"1.25K", L"1.6K", L"2K", L"2.5K", L"3.15K", L"4K",
+    L"5K", L"6.3K", L"8K", L"10K", L"12.5K", L"16K", L"20K"
 };
 
 static void led_band_range(int bar, unsigned sample_rate, int *start, int *end)
