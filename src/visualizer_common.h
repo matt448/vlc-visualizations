@@ -60,6 +60,8 @@ struct filter_sys_t
     int render_height;
     float bars[VISUALIZER_MAX_BARS];
     float analysis_bars[VISUALIZER_MAX_BARS];
+    float peak_bars[VISUALIZER_MAX_BARS];
+    unsigned peak_hold_frames[VISUALIZER_MAX_BARS];
     float sample_history[VISUALIZER_MAX_FFT_SIZE];
     size_t sample_history_pos;
     size_t sample_history_count;

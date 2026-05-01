@@ -13,6 +13,10 @@
 #define VIDEO_WIDTH 1050
 #define VIDEO_HEIGHT 460
 
+#ifndef LED_PEAK_INDICATORS
+#define LED_PEAK_INDICATORS 0
+#endif
+
 static const float frequency_centers[BAR_COUNT] = {
     20.0f, 25.0f, 31.5f, 40.0f, 50.0f, 63.0f, 80.0f, 100.0f,
     125.0f, 160.0f, 200.0f, 250.0f, 315.0f, 400.0f, 500.0f, 630.0f,
@@ -113,6 +117,36 @@ static float normalize_band(visualizer_sys_t *sys, const float magnitudes[BAR_CO
     return powf(magnitudes[bar] / peak, 0.58f);
 }
 
+static void update_peak_indicators(visualizer_sys_t *sys, int bar, float value)
+{
+#if LED_PEAK_INDICATORS
+    const unsigned hold_frames = 18;
+    const float peak_decay = 0.010f;
+
+    if (value >= sys->peak_bars[bar])
+    {
+        sys->peak_bars[bar] = value;
+        sys->peak_hold_frames[bar] = hold_frames;
+    }
+    else if (sys->peak_hold_frames[bar] > 0)
+    {
+        sys->peak_hold_frames[bar]--;
+    }
+    else
+    {
+        sys->peak_bars[bar] -= peak_decay;
+        if (sys->peak_bars[bar] < value)
+            sys->peak_bars[bar] = value;
+        if (sys->peak_bars[bar] < 0.0f)
+            sys->peak_bars[bar] = 0.0f;
+    }
+#else
+    (void)sys;
+    (void)bar;
+    (void)value;
+#endif
+}
+
 static void led_analyze(visualizer_sys_t *sys, const float *samples, size_t frame_count,
                         size_t channels, unsigned sample_rate)
 {
@@ -167,6 +201,7 @@ static void led_analyze(visualizer_sys_t *sys, const float *samples, size_t fram
             sys->analysis_bars[i] = current - decrease;
         else
             sys->analysis_bars[i] = next[i];
+        update_peak_indicators(sys, i, sys->analysis_bars[i]);
     }
     memcpy(sys->bars, sys->analysis_bars, sizeof(sys->bars));
     LeaveCriticalSection(&sys->lock);
@@ -189,7 +224,7 @@ static COLORREF dim_led_color(COLORREF color)
 }
 
 static void fill_led_bar(HDC dc, int x, int bar_width, int graph_top, int graph_height,
-                         float value)
+                         float value, float peak_value)
 {
     const int segment_count = 32;
     const int segment_gap = 3;
@@ -204,6 +239,7 @@ static void fill_led_bar(HDC dc, int x, int bar_width, int graph_top, int graph_
         value = 1.0f;
 
     int lit_segments = (int)(value * (float)segment_count + 0.5f);
+    int peak_segment = (int)ceilf(peak_value * (float)segment_count) - 1;
 
     for (int segment = 0; segment < segment_count; ++segment)
     {
@@ -222,16 +258,40 @@ static void fill_led_bar(HDC dc, int x, int bar_width, int graph_top, int graph_
         FillRect(dc, &rect, brush);
         DeleteObject(brush);
     }
+
+#if LED_PEAK_INDICATORS
+    if (peak_segment >= 0)
+    {
+        if (peak_segment >= segment_count)
+            peak_segment = segment_count - 1;
+
+        int y = graph_top + graph_height - (peak_segment + 1) * segment_height - peak_segment * segment_gap;
+        HBRUSH brush = CreateSolidBrush(led_segment_color(peak_segment, segment_count));
+        RECT rect = {
+            x,
+            y,
+            x + bar_width,
+            y + segment_height
+        };
+
+        FillRect(dc, &rect, brush);
+        DeleteObject(brush);
+    }
+#else
+    (void)peak_segment;
+#endif
 }
 
 static void led_draw(visualizer_sys_t *sys)
 {
     float bars[BAR_COUNT];
+    float peaks[BAR_COUNT];
     wchar_t track_text[512];
     RECT rc = { 0, 0, sys->render_width, sys->render_height };
 
     EnterCriticalSection(&sys->lock);
     memcpy(bars, sys->bars, sizeof(bars));
+    memcpy(peaks, sys->peak_bars, sizeof(peaks));
     wcsncpy(track_text, sys->track_text, ARRAYSIZE(track_text) - 1);
     track_text[ARRAYSIZE(track_text) - 1] = L'\0';
     LeaveCriticalSection(&sys->lock);
@@ -253,7 +313,7 @@ static void led_draw(visualizer_sys_t *sys)
     for (int i = 0; i < BAR_COUNT; ++i)
     {
         int x = side_pad + i * (bar_width + gap);
-        fill_led_bar(sys->render_dc, x, bar_width, graph_top, graph_height, bars[i]);
+        fill_led_bar(sys->render_dc, x, bar_width, graph_top, graph_height, bars[i], peaks[i]);
     }
 
     SetBkMode(sys->render_dc, TRANSPARENT);
@@ -313,10 +373,19 @@ static void Close(vlc_object_t *object)
 }
 
 vlc_module_begin()
+#if LED_PEAK_INDICATORS
+    set_shortname("LED Peaks")
+    set_description("31-band LED segment visualization with peak hold indicators")
+#else
     set_shortname("LED Segments")
     set_description("31-band LED segment visualization with frequency labels")
+#endif
     set_capability("visualization", 0)
     set_subcategory(SUBCAT_AUDIO_VISUAL)
+#if LED_PEAK_INDICATORS
+    add_shortcut("led_peaks", "led_segment_peaks", "led_peak_visualizer")
+#else
     add_shortcut("led_segments", "led_segment_visualizer")
+#endif
     set_callbacks(Open, Close)
 vlc_module_end()

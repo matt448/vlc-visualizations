@@ -10,6 +10,10 @@ LED Segments:
 
 <img src="docs/screenshots/led_segment_visualizer_screenshot.png" alt="LED Segments visualization running in VLC" width="600">
 
+LED Peaks:
+
+<img src="docs/screenshots/led_peaks_visualizer_screenshot.png" alt="LED Peaks visualization running in VLC" width="600">
+
 This scaffold targets VLC 3.x on Windows. It uses VLC's visualization/audio-filter plugin API for audio samples and VLC's video-output request API for rendering, matching the built-in Spectrum visualizer's placement inside the VLC window.
 
 Your current VLC path is assumed to be:
@@ -24,6 +28,7 @@ That means you need 64-bit Windows builds of these plugins. See [docs/WINDOWS.md
 
 - `spectrum_info`: Spectrum-style frequency bars derived from the current audio buffer, with persistent current track/stream text.
 - `led_segments`: 31-band LED-segment visualization with frequency labels, current track/stream text, and green, yellow, and red level sections.
+- `led_peaks`: 31-band LED-segment visualization with hardware-style peak hold indicators that pause briefly, then fall slowly.
 
 ## Prerequisites
 
@@ -67,6 +72,7 @@ The output plugin DLLs are named:
 ```text
 libtrackinfo_visualizer_plugin.dll
 libled_segment_visualizer_plugin.dll
+libled_peak_visualizer_plugin.dll
 ```
 
 ## Install
@@ -80,6 +86,7 @@ C:\Program Files\VideoLAN\VLC\plugins\visualization\
 ```powershell
 Copy-Item ".\build\libtrackinfo_visualizer_plugin.dll" "C:\Program Files\VideoLAN\VLC\plugins\visualization\" -Force
 Copy-Item ".\build\libled_segment_visualizer_plugin.dll" "C:\Program Files\VideoLAN\VLC\plugins\visualization\" -Force
+Copy-Item ".\build\libled_peak_visualizer_plugin.dll" "C:\Program Files\VideoLAN\VLC\plugins\visualization\" -Force
 & "C:\Program Files\VideoLAN\VLC\vlc-cache-gen.exe" "C:\Program Files\VideoLAN\VLC\plugins"
 ```
 
@@ -99,6 +106,12 @@ LED Segments:
 
 ```powershell
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=led_segments path\to\song.mp3
+```
+
+LED Peaks:
+
+```powershell
+& "C:\Program Files\VideoLAN\VLC\vlc.exe" --audio-visual=led_peaks path\to\song.mp3
 ```
 
 VLC's audio visualization menu is hard-coded and may not show third-party visualization plugins. Use the command-line option above to start playback with these visualizers.

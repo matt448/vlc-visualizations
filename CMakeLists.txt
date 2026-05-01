@@ -97,3 +97,5 @@ endfunction()
 
 add_vlc_visualizer(trackinfo_visualizer trackinfo_visualizer_plugin trackinfo_visualizer src/spectrum_info.c)
 add_vlc_visualizer(led_segment_visualizer led_segment_visualizer_plugin led_segment_visualizer src/led_segments.c)
+add_vlc_visualizer(led_peak_visualizer led_peak_visualizer_plugin led_peak_visualizer src/led_segments.c)
+target_compile_definitions(led_peak_visualizer PRIVATE LED_PEAK_INDICATORS=1)
