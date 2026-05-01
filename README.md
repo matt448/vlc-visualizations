@@ -4,11 +4,11 @@ A small collection of native VLC visualization plugins for Windows.
 
 Spectrum Info:
 
-![Spectrum Info visualization running in VLC](docs/screenshots/trackinfo_visualizer_screenshot.png)
+<img src="docs/screenshots/trackinfo_visualizer_screenshot.png" alt="Spectrum Info visualization running in VLC" width="600">
 
 LED Segments:
 
-![LED Segments visualization running in VLC](docs/screenshots/led_segment_visualizer_screenshot.png)
+<img src="docs/screenshots/led_segment_visualizer_screenshot.png" alt="LED Segments visualization running in VLC" width="600">
 
 This scaffold targets VLC 3.x on Windows. It uses VLC's visualization/audio-filter plugin API for audio samples and VLC's video-output request API for rendering, matching the built-in Spectrum visualizer's placement inside the VLC window.
 
