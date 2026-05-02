@@ -62,6 +62,16 @@ struct filter_sys_t
     float analysis_bars[VISUALIZER_MAX_BARS];
     float peak_bars[VISUALIZER_MAX_BARS];
     unsigned peak_hold_frames[VISUALIZER_MAX_BARS];
+    float brick_energy[VISUALIZER_MAX_BARS];
+    unsigned brick_flash_frames[VISUALIZER_MAX_BARS];
+    int brick_flash_rows[VISUALIZER_MAX_BARS];
+    float ball_x;
+    float ball_y;
+    float ball_vx;
+    float ball_vy;
+    float paddle_x;
+    float overall_level;
+    bool game_initialized;
     float sample_history[VISUALIZER_MAX_FFT_SIZE];
     size_t sample_history_pos;
     size_t sample_history_count;
