@@ -72,6 +72,11 @@ struct filter_sys_t
     float paddle_x;
     float overall_level;
     bool game_initialized;
+    float vector_enemy_depth[VISUALIZER_MAX_BARS];
+    float vector_shot_depth[VISUALIZER_MAX_BARS];
+    unsigned vector_enemy_active[VISUALIZER_MAX_BARS];
+    unsigned vector_shot_active[VISUALIZER_MAX_BARS];
+    unsigned animation_frame;
     float sample_history[VISUALIZER_MAX_FFT_SIZE];
     size_t sample_history_pos;
     size_t sample_history_count;
