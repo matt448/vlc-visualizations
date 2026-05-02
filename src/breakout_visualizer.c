@@ -149,13 +149,36 @@ static bool ball_overlaps_rect(float ball_x, float ball_y, RECT rect)
     return dx * dx + dy * dy <= (float)(BALL_RADIUS * BALL_RADIUS);
 }
 
-static bool break_touched_lit_brick(visualizer_sys_t *sys, float ball_x, float ball_y)
+static int brick_collision_axis(float previous_x, float previous_y, RECT rect)
+{
+    if (previous_x + (float)BALL_RADIUS <= (float)rect.left ||
+        previous_x - (float)BALL_RADIUS >= (float)rect.right)
+        return 0;
+
+    if (previous_y + (float)BALL_RADIUS <= (float)rect.top ||
+        previous_y - (float)BALL_RADIUS >= (float)rect.bottom)
+        return 1;
+
+    float left_penetration = fabsf(previous_x - (float)rect.left);
+    float right_penetration = fabsf(previous_x - (float)rect.right);
+    float top_penetration = fabsf(previous_y - (float)rect.top);
+    float bottom_penetration = fabsf(previous_y - (float)rect.bottom);
+    float x_penetration = left_penetration < right_penetration ? left_penetration : right_penetration;
+    float y_penetration = top_penetration < bottom_penetration ? top_penetration : bottom_penetration;
+
+    return x_penetration < y_penetration ? 0 : 1;
+}
+
+static bool break_touched_lit_brick(visualizer_sys_t *sys, float previous_x, float previous_y,
+                                    float ball_x, float ball_y, int *collision_axis)
 {
     int field_top = BRICK_TOP - 20;
     int field_bottom = sys->render_height - FIELD_BOTTOM_PAD;
     int field_left = FIELD_SIDE_PAD;
     int field_right = sys->render_width - FIELD_SIDE_PAD;
     int brick_width = (sys->render_width - FIELD_SIDE_PAD * 2 - (BAR_COUNT - 1) * BRICK_GAP) / BAR_COUNT;
+    float previous_px = (float)field_left + previous_x * (float)(field_right - field_left);
+    float previous_py = (float)field_top + previous_y * (float)(field_bottom - field_top);
     float ball_px = (float)field_left + ball_x * (float)(field_right - field_left);
     float ball_py = (float)field_top + ball_y * (float)(field_bottom - field_top);
 
@@ -184,6 +207,7 @@ static bool break_touched_lit_brick(visualizer_sys_t *sys, float ball_x, float b
             sys->brick_energy[col] = 1.0f;
             sys->brick_flash_frames[col] = 10;
             sys->brick_flash_rows[col] = row;
+            *collision_axis = brick_collision_axis(previous_px, previous_py, brick);
             return true;
         }
     }
@@ -201,6 +225,7 @@ static void update_game_motion(visualizer_sys_t *sys)
     float follow_rate;
     float next_x;
     float next_y;
+    int collision_axis = 1;
 
     initialize_game(sys);
 
@@ -258,10 +283,18 @@ static void update_game_motion(visualizer_sys_t *sys)
         return;
     }
 
-    if (break_touched_lit_brick(sys, next_x, next_y))
+    if (break_touched_lit_brick(sys, sys->ball_x, sys->ball_y, next_x, next_y, &collision_axis))
     {
-        sys->ball_vy = fabsf(sys->ball_vy);
-        next_y = sys->ball_y + sys->ball_vy * speed_boost;
+        if (collision_axis == 0)
+        {
+            sys->ball_vx = -sys->ball_vx;
+            next_x = sys->ball_x + sys->ball_vx * speed_boost;
+        }
+        else
+        {
+            sys->ball_vy = -sys->ball_vy;
+            next_y = sys->ball_y + sys->ball_vy * speed_boost;
+        }
     }
 
     sys->ball_x = next_x;
