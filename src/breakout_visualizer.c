@@ -8,16 +8,16 @@
 #include <math.h>
 #include <string.h>
 
-#define BAR_COUNT 80
+#define BAR_COUNT 40
 #define FFT_SIZE 1024
 #define VIDEO_WIDTH 900
 #define VIDEO_HEIGHT 520
-#define BRICK_ROWS 5
+#define BRICK_ROWS 10
 #define BALL_RADIUS 8
 #define FIELD_SIDE_PAD 30
 #define BRICK_TOP 48
 #define BRICK_GAP 2
-#define BRICK_HEIGHT 27
+#define BRICK_HEIGHT 13
 #define FIELD_BOTTOM_PAD 100
 
 static void breakout_band_range(int bar, unsigned sample_rate, int *start, int *end)
@@ -304,7 +304,8 @@ static COLORREF brick_color(int row, float energy)
         RGB(255, 128, 46),
         RGB(255, 58, 65)
     };
-    COLORREF base = palette[row];
+    int color_row = row * 5 / BRICK_ROWS;
+    COLORREF base = palette[color_row];
     float mix = 0.22f + energy * 0.78f;
 
     return RGB((int)(GetRValue(base) * mix), (int)(GetGValue(base) * mix),
@@ -320,8 +321,9 @@ static COLORREF flash_color(int row)
         RGB(255, 205, 145),
         RGB(255, 175, 175)
     };
+    int color_row = row * 5 / BRICK_ROWS;
 
-    return palette[row];
+    return palette[color_row];
 }
 
 static void draw_ball(HDC dc, int cx, int cy, int radius, float level)
@@ -352,7 +354,7 @@ static void breakout_draw(visualizer_sys_t *sys)
     float bricks[BAR_COUNT];
     unsigned flashes[BAR_COUNT];
     int flash_rows[BAR_COUNT];
-    uint8_t broken[BAR_COUNT][8];
+    uint8_t broken[BAR_COUNT][16];
     float ball_x;
     float ball_y;
     float paddle_x;
