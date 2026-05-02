@@ -74,6 +74,8 @@ struct filter_sys_t
     float paddle_x;
     float overall_level;
     bool game_initialized;
+    bool silence_reset_done;
+    DWORD silence_start_tick;
     float sample_history[VISUALIZER_MAX_FFT_SIZE];
     size_t sample_history_pos;
     size_t sample_history_count;

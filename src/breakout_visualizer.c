@@ -84,6 +84,50 @@ static void reset_bricks_for_track(visualizer_sys_t *sys)
     wcsncpy(sys->game_track_text, sys->track_text, ARRAYSIZE(sys->game_track_text) - 1);
     sys->game_track_text[ARRAYSIZE(sys->game_track_text) - 1] = L'\0';
     sys->game_initialized = false;
+    sys->silence_reset_done = false;
+    sys->silence_start_tick = 0;
+}
+
+static void reset_bricks_after_silence(visualizer_sys_t *sys)
+{
+    memset(sys->brick_broken, 0, sizeof(sys->brick_broken));
+    memset(sys->brick_flash_frames, 0, sizeof(sys->brick_flash_frames));
+    memset(sys->brick_flash_rows, 0, sizeof(sys->brick_flash_rows));
+    sys->game_initialized = false;
+}
+
+static void update_silence_reset(visualizer_sys_t *sys, float rms)
+{
+    const DWORD silence_reset_delay_ms = 2000;
+    const float bar_threshold = 0.015f;
+    const float rms_threshold = 0.0025f;
+    bool silent = rms < rms_threshold;
+
+    for (int i = 0; i < BAR_COUNT && silent; ++i)
+    {
+        if (sys->bars[i] > bar_threshold)
+            silent = false;
+    }
+
+    DWORD now = GetTickCount();
+    if (!silent)
+    {
+        sys->silence_start_tick = 0;
+        sys->silence_reset_done = false;
+        return;
+    }
+
+    if (sys->silence_start_tick == 0)
+    {
+        sys->silence_start_tick = now;
+        return;
+    }
+
+    if (!sys->silence_reset_done && now - sys->silence_start_tick >= silence_reset_delay_ms)
+    {
+        reset_bricks_after_silence(sys);
+        sys->silence_reset_done = true;
+    }
 }
 
 static bool ball_overlaps_rect(float ball_x, float ball_y, RECT rect)
@@ -291,6 +335,7 @@ static void breakout_analyze(visualizer_sys_t *sys, const float *samples, size_t
     }
 
     sys->overall_level = sys->overall_level * 0.86f + fminf(rms * 7.0f, 1.0f) * 0.14f;
+    update_silence_reset(sys, rms);
     update_game_motion(sys);
     LeaveCriticalSection(&sys->lock);
 }
