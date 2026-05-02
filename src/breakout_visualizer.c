@@ -13,6 +13,12 @@
 #define VIDEO_WIDTH 900
 #define VIDEO_HEIGHT 520
 #define BRICK_ROWS 5
+#define BALL_RADIUS 8
+#define FIELD_SIDE_PAD 30
+#define BRICK_TOP 48
+#define BRICK_GAP 4
+#define BRICK_HEIGHT 27
+#define FIELD_BOTTOM_PAD 100
 
 static void breakout_band_range(int bar, unsigned sample_rate, int *start, int *end)
 {
@@ -78,6 +84,67 @@ static void reset_bricks_for_track(visualizer_sys_t *sys)
     wcsncpy(sys->game_track_text, sys->track_text, ARRAYSIZE(sys->game_track_text) - 1);
     sys->game_track_text[ARRAYSIZE(sys->game_track_text) - 1] = L'\0';
     sys->game_initialized = false;
+}
+
+static bool ball_overlaps_rect(float ball_x, float ball_y, RECT rect)
+{
+    float closest_x = ball_x;
+    float closest_y = ball_y;
+
+    if (closest_x < (float)rect.left)
+        closest_x = (float)rect.left;
+    if (closest_x > (float)rect.right)
+        closest_x = (float)rect.right;
+    if (closest_y < (float)rect.top)
+        closest_y = (float)rect.top;
+    if (closest_y > (float)rect.bottom)
+        closest_y = (float)rect.bottom;
+
+    float dx = ball_x - closest_x;
+    float dy = ball_y - closest_y;
+    return dx * dx + dy * dy <= (float)(BALL_RADIUS * BALL_RADIUS);
+}
+
+static bool break_touched_lit_brick(visualizer_sys_t *sys, float ball_x, float ball_y)
+{
+    int field_top = BRICK_TOP - 20;
+    int field_bottom = sys->render_height - FIELD_BOTTOM_PAD;
+    int field_left = FIELD_SIDE_PAD;
+    int field_right = sys->render_width - FIELD_SIDE_PAD;
+    int brick_width = (sys->render_width - FIELD_SIDE_PAD * 2 - (BAR_COUNT - 1) * BRICK_GAP) / BAR_COUNT;
+    float ball_px = (float)field_left + ball_x * (float)(field_right - field_left);
+    float ball_py = (float)field_top + ball_y * (float)(field_bottom - field_top);
+
+    for (int col = 0; col < BAR_COUNT; ++col)
+    {
+        int lit_rows = (int)(sys->bars[col] * (float)BRICK_ROWS + 0.5f);
+        int x = FIELD_SIDE_PAD + col * (brick_width + BRICK_GAP);
+
+        for (int row = 0; row < BRICK_ROWS; ++row)
+        {
+            int from_bottom = BRICK_ROWS - row - 1;
+            if (from_bottom >= lit_rows || sys->brick_broken[col][row])
+                continue;
+
+            RECT brick = {
+                x,
+                BRICK_TOP + row * (BRICK_HEIGHT + BRICK_GAP),
+                x + brick_width,
+                BRICK_TOP + row * (BRICK_HEIGHT + BRICK_GAP) + BRICK_HEIGHT
+            };
+
+            if (!ball_overlaps_rect(ball_px, ball_py, brick))
+                continue;
+
+            sys->brick_broken[col][row] = 1;
+            sys->brick_energy[col] = 1.0f;
+            sys->brick_flash_frames[col] = 10;
+            sys->brick_flash_rows[col] = row;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 static void update_game_motion(visualizer_sys_t *sys)
@@ -146,23 +213,10 @@ static void update_game_motion(visualizer_sys_t *sys)
         return;
     }
 
-    int brick_col = (int)(next_x * (float)BAR_COUNT);
-    if (brick_col >= 0 && brick_col < BAR_COUNT && next_y > 0.12f && next_y < 0.46f)
+    if (break_touched_lit_brick(sys, next_x, next_y))
     {
-        int row = (int)((next_y - 0.12f) / (0.34f / (float)BRICK_ROWS));
-        int lit_rows = (int)(sys->bars[brick_col] * (float)BRICK_ROWS + 0.5f);
-        int from_bottom = BRICK_ROWS - row - 1;
-
-        if (row >= 0 && row < BRICK_ROWS && from_bottom < lit_rows &&
-            !sys->brick_broken[brick_col][row])
-        {
-            sys->brick_broken[brick_col][row] = 1;
-            sys->brick_energy[brick_col] = 1.0f;
-            sys->brick_flash_frames[brick_col] = 10;
-            sys->brick_flash_rows[brick_col] = row;
-            sys->ball_vy = fabsf(sys->ball_vy);
-            next_y = sys->ball_y + sys->ball_vy * speed_boost;
-        }
+        sys->ball_vy = fabsf(sys->ball_vy);
+        next_y = sys->ball_y + sys->ball_vy * speed_boost;
     }
 
     sys->ball_x = next_x;
@@ -325,11 +379,11 @@ static void breakout_draw(visualizer_sys_t *sys)
     FillRect(sys->render_dc, &rc, background);
     DeleteObject(background);
 
-    int side_pad = 30;
-    int top = 48;
-    int brick_gap = 4;
+    int side_pad = FIELD_SIDE_PAD;
+    int top = BRICK_TOP;
+    int brick_gap = BRICK_GAP;
     int rows = BRICK_ROWS;
-    int brick_h = 27;
+    int brick_h = BRICK_HEIGHT;
     int brick_w = (sys->render_width - side_pad * 2 - (BAR_COUNT - 1) * brick_gap) / BAR_COUNT;
 
     HPEN rail_pen = CreatePen(PS_SOLID, 2, RGB(42, 55, 66));
@@ -371,12 +425,12 @@ static void breakout_draw(visualizer_sys_t *sys)
     }
 
     int field_top = top - 20;
-    int field_bottom = sys->render_height - 100;
+    int field_bottom = sys->render_height - FIELD_BOTTOM_PAD;
     int field_left = side_pad;
     int field_right = sys->render_width - side_pad;
     int ball_px = field_left + (int)(ball_x * (float)(field_right - field_left));
     int ball_py = field_top + (int)(ball_y * (float)(field_bottom - field_top));
-    draw_ball(sys->render_dc, ball_px, ball_py, 8, level);
+    draw_ball(sys->render_dc, ball_px, ball_py, BALL_RADIUS, level);
 
     int paddle_w = 86 + (int)(level * 34.0f);
     int paddle_h = 13;
