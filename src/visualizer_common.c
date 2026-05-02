@@ -345,7 +345,7 @@ static block_t *Filter(filter_t *filter, block_t *block)
         return NULL;
 
     visualizer_sys_t *sys = filter->p_sys;
-    const DWORD metadata_update_delay_ms = 3500;
+    const DWORD metadata_update_delay_ms = 3000;
 
     DWORD now = GetTickCount();
     if (now - sys->last_meta_tick > 1000)
