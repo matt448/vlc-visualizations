@@ -297,27 +297,31 @@ static void breakout_analyze(visualizer_sys_t *sys, const float *samples, size_t
 
 static COLORREF brick_color(int row, float energy)
 {
-    const COLORREF bottom = RGB(48, 236, 92);
-    const COLORREF top = RGB(255, 58, 65);
-    float row_ratio = (float)row / (float)(BRICK_ROWS - 1);
+    static const COLORREF palette[5] = {
+        RGB(48, 236, 92),
+        RGB(48, 210, 235),
+        RGB(255, 218, 55),
+        RGB(255, 128, 46),
+        RGB(255, 58, 65)
+    };
+    COLORREF base = palette[row];
     float mix = 0.22f + energy * 0.78f;
-    int base_r = (int)((float)GetRValue(bottom) + ((float)GetRValue(top) - (float)GetRValue(bottom)) * row_ratio);
-    int base_g = (int)((float)GetGValue(bottom) + ((float)GetGValue(top) - (float)GetGValue(bottom)) * row_ratio);
-    int base_b = (int)((float)GetBValue(bottom) + ((float)GetBValue(top) - (float)GetBValue(bottom)) * row_ratio);
 
-    return RGB((int)((float)base_r * mix), (int)((float)base_g * mix),
-               (int)((float)base_b * mix));
+    return RGB((int)(GetRValue(base) * mix), (int)(GetGValue(base) * mix),
+               (int)(GetBValue(base) * mix));
 }
 
 static COLORREF flash_color(int row)
 {
-    const COLORREF bottom = RGB(170, 255, 190);
-    const COLORREF top = RGB(255, 175, 175);
-    float row_ratio = (float)row / (float)(BRICK_ROWS - 1);
+    static const COLORREF palette[5] = {
+        RGB(170, 255, 190),
+        RGB(170, 250, 255),
+        RGB(255, 248, 170),
+        RGB(255, 205, 145),
+        RGB(255, 175, 175)
+    };
 
-    return RGB((int)((float)GetRValue(bottom) + ((float)GetRValue(top) - (float)GetRValue(bottom)) * row_ratio),
-               (int)((float)GetGValue(bottom) + ((float)GetGValue(top) - (float)GetGValue(bottom)) * row_ratio),
-               (int)((float)GetBValue(bottom) + ((float)GetBValue(top) - (float)GetBValue(bottom)) * row_ratio));
+    return palette[row];
 }
 
 static void draw_ball(HDC dc, int cx, int cy, int radius, float level)
