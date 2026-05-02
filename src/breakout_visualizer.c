@@ -12,6 +12,7 @@
 #define FFT_SIZE 1024
 #define VIDEO_WIDTH 900
 #define VIDEO_HEIGHT 520
+#define BRICK_ROWS 5
 
 static void breakout_band_range(int bar, unsigned sample_rate, int *start, int *end)
 {
@@ -64,6 +65,19 @@ static void initialize_game(visualizer_sys_t *sys)
     sys->ball_vy = -0.008f;
     sys->paddle_x = 0.5f;
     sys->game_initialized = true;
+}
+
+static void reset_bricks_for_track(visualizer_sys_t *sys)
+{
+    if (wcscmp(sys->game_track_text, sys->track_text) == 0)
+        return;
+
+    memset(sys->brick_broken, 0, sizeof(sys->brick_broken));
+    memset(sys->brick_flash_frames, 0, sizeof(sys->brick_flash_frames));
+    memset(sys->brick_flash_rows, 0, sizeof(sys->brick_flash_rows));
+    wcsncpy(sys->game_track_text, sys->track_text, ARRAYSIZE(sys->game_track_text) - 1);
+    sys->game_track_text[ARRAYSIZE(sys->game_track_text) - 1] = L'\0';
+    sys->game_initialized = false;
 }
 
 static void update_game_motion(visualizer_sys_t *sys)
@@ -135,9 +149,14 @@ static void update_game_motion(visualizer_sys_t *sys)
     int brick_col = (int)(next_x * (float)BAR_COUNT);
     if (brick_col >= 0 && brick_col < BAR_COUNT && next_y > 0.12f && next_y < 0.46f)
     {
-        int row = (int)((next_y - 0.12f) / (0.34f / 5.0f));
-        if (row >= 0 && row < 5 && sys->brick_energy[brick_col] > 0.12f)
+        int row = (int)((next_y - 0.12f) / (0.34f / (float)BRICK_ROWS));
+        int lit_rows = (int)(sys->bars[brick_col] * (float)BRICK_ROWS + 0.5f);
+        int from_bottom = BRICK_ROWS - row - 1;
+
+        if (row >= 0 && row < BRICK_ROWS && from_bottom < lit_rows &&
+            !sys->brick_broken[brick_col][row])
         {
+            sys->brick_broken[brick_col][row] = 1;
             sys->brick_energy[brick_col] = 1.0f;
             sys->brick_flash_frames[brick_col] = 10;
             sys->brick_flash_rows[brick_col] = row;
@@ -198,6 +217,7 @@ static void breakout_analyze(visualizer_sys_t *sys, const float *samples, size_t
     }
 
     EnterCriticalSection(&sys->lock);
+    reset_bricks_for_track(sys);
     for (int i = 0; i < BAR_COUNT; ++i)
     {
         float value = normalize_band(sys, magnitudes, i);
@@ -278,6 +298,7 @@ static void breakout_draw(visualizer_sys_t *sys)
     float bricks[BAR_COUNT];
     unsigned flashes[BAR_COUNT];
     int flash_rows[BAR_COUNT];
+    uint8_t broken[BAR_COUNT][8];
     float ball_x;
     float ball_y;
     float paddle_x;
@@ -290,6 +311,7 @@ static void breakout_draw(visualizer_sys_t *sys)
     memcpy(bricks, sys->brick_energy, sizeof(bricks));
     memcpy(flashes, sys->brick_flash_frames, sizeof(flashes));
     memcpy(flash_rows, sys->brick_flash_rows, sizeof(flash_rows));
+    memcpy(broken, sys->brick_broken, sizeof(broken));
     ball_x = sys->ball_x;
     ball_y = sys->ball_y;
     paddle_x = sys->paddle_x;
@@ -306,7 +328,7 @@ static void breakout_draw(visualizer_sys_t *sys)
     int side_pad = 30;
     int top = 48;
     int brick_gap = 4;
-    int rows = 5;
+    int rows = BRICK_ROWS;
     int brick_h = 27;
     int brick_w = (sys->render_width - side_pad * 2 - (BAR_COUNT - 1) * brick_gap) / BAR_COUNT;
 
@@ -328,12 +350,14 @@ static void breakout_draw(visualizer_sys_t *sys)
         {
             int from_bottom = rows - row - 1;
             float energy = bricks[col];
+            bool is_flashing = flashes[col] > 0 && flash_rows[col] == row;
+            if (broken[col][row] && !is_flashing)
+                continue;
+
             if (from_bottom >= lit_rows)
                 energy *= 0.22f;
 
-            COLORREF color = (flashes[col] > 0 && flash_rows[col] == row)
-                                 ? flash_color(row)
-                                 : brick_color(row, energy);
+            COLORREF color = is_flashing ? flash_color(row) : brick_color(row, energy);
             HBRUSH brush = CreateSolidBrush(color);
             RECT brick = {
                 x,

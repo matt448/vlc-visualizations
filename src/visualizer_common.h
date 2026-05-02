@@ -65,6 +65,8 @@ struct filter_sys_t
     float brick_energy[VISUALIZER_MAX_BARS];
     unsigned brick_flash_frames[VISUALIZER_MAX_BARS];
     int brick_flash_rows[VISUALIZER_MAX_BARS];
+    uint8_t brick_broken[VISUALIZER_MAX_BARS][8];
+    wchar_t game_track_text[512];
     float ball_x;
     float ball_y;
     float ball_vx;
