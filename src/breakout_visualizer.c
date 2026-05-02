@@ -220,7 +220,7 @@ static void update_game_motion(visualizer_sys_t *sys)
     const float paddle_y = 0.965f;
     const float paddle_half_width = 0.090f;
     const float wall_margin = (float)BALL_RADIUS / (float)(VIDEO_WIDTH - FIELD_SIDE_PAD * 2);
-    float speed_boost = 0.68f + sys->overall_level * 0.65f;
+    const float speed_boost = 0.88f;
     float target_x;
     float follow_rate;
     float next_x;
@@ -230,7 +230,6 @@ static void update_game_motion(visualizer_sys_t *sys)
     initialize_game(sys);
 
     target_x = sys->ball_vy > 0.0f ? sys->ball_x : 0.5f + (sys->ball_x - 0.5f) * 0.35f;
-    target_x += (sys->bars[6] - sys->bars[26]) * 0.045f;
     follow_rate = sys->ball_vy > 0.0f ? 0.22f : 0.08f;
     sys->paddle_x += (target_x - sys->paddle_x) * follow_rate;
     if (sys->paddle_x < paddle_half_width)
@@ -278,7 +277,7 @@ static void update_game_motion(visualizer_sys_t *sys)
     {
         sys->ball_x = sys->paddle_x;
         sys->ball_y = paddle_y - 0.05f;
-        sys->ball_vx = sys->overall_level > 0.45f ? -0.007f : 0.007f;
+        sys->ball_vx = sys->ball_vx < 0.0f ? -0.007f : 0.007f;
         sys->ball_vy = -0.008f;
         return;
     }
