@@ -79,6 +79,8 @@ struct filter_sys_t
     size_t sample_history_count;
     float adaptive_peak;
     wchar_t track_text[512];
+    wchar_t pending_track_text[512];
+    DWORD pending_meta_tick;
     DWORD last_meta_tick;
 };
 
