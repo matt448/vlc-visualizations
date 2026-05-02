@@ -12,12 +12,12 @@
 #define FFT_SIZE 1024
 #define VIDEO_WIDTH 900
 #define VIDEO_HEIGHT 520
-#define BRICK_ROWS 10
+#define BRICK_ROWS 24
 #define BALL_RADIUS 8
 #define FIELD_SIDE_PAD 30
 #define BRICK_TOP 48
-#define BRICK_GAP 2
-#define BRICK_HEIGHT 13
+#define BRICK_GAP 1
+#define BRICK_HEIGHT 6
 #define FIELD_BOTTOM_PAD 100
 
 static void breakout_band_range(int bar, unsigned sample_rate, int *start, int *end)
@@ -98,7 +98,7 @@ static void reset_bricks_after_silence(visualizer_sys_t *sys)
 
 static void update_silence_reset(visualizer_sys_t *sys, float rms)
 {
-    const DWORD silence_reset_delay_ms = 2000;
+    const DWORD silence_reset_delay_ms = 500;
     const float bar_threshold = 0.015f;
     const float rms_threshold = 0.0025f;
     bool silent = rms < rms_threshold;
@@ -375,14 +375,15 @@ static void breakout_analyze(visualizer_sys_t *sys, const float *samples, size_t
 
 static COLORREF brick_color(int row, float energy)
 {
-    static const COLORREF palette[5] = {
-        RGB(48, 236, 92),
+    static const COLORREF palette[6] = {
+        RGB(176, 64, 255),
         RGB(48, 210, 235),
+        RGB(48, 236, 92),
         RGB(255, 218, 55),
         RGB(255, 128, 46),
         RGB(255, 58, 65)
     };
-    int color_row = row * 5 / BRICK_ROWS;
+    int color_row = row * 6 / BRICK_ROWS;
     COLORREF base = palette[color_row];
     float mix = 0.22f + energy * 0.78f;
 
@@ -392,14 +393,15 @@ static COLORREF brick_color(int row, float energy)
 
 static COLORREF flash_color(int row)
 {
-    static const COLORREF palette[5] = {
-        RGB(170, 255, 190),
+    static const COLORREF palette[6] = {
+        RGB(225, 180, 255),
         RGB(170, 250, 255),
+        RGB(170, 255, 190),
         RGB(255, 248, 170),
         RGB(255, 205, 145),
         RGB(255, 175, 175)
     };
-    int color_row = row * 5 / BRICK_ROWS;
+    int color_row = row * 6 / BRICK_ROWS;
 
     return palette[color_row];
 }
@@ -432,7 +434,7 @@ static void breakout_draw(visualizer_sys_t *sys)
     float bricks[BAR_COUNT];
     unsigned flashes[BAR_COUNT];
     int flash_rows[BAR_COUNT];
-    uint8_t broken[BAR_COUNT][16];
+    uint8_t broken[BAR_COUNT][32];
     float ball_x;
     float ball_y;
     float paddle_x;
