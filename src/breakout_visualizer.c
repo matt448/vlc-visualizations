@@ -195,6 +195,7 @@ static void update_game_motion(visualizer_sys_t *sys)
 {
     const float paddle_y = 0.965f;
     const float paddle_half_width = 0.090f;
+    const float wall_margin = (float)BALL_RADIUS / (float)(VIDEO_WIDTH - FIELD_SIDE_PAD * 2);
     float speed_boost = 0.68f + sys->overall_level * 0.65f;
     float target_x;
     float follow_rate;
@@ -215,13 +216,13 @@ static void update_game_motion(visualizer_sys_t *sys)
     next_x = sys->ball_x + sys->ball_vx * speed_boost;
     next_y = sys->ball_y + sys->ball_vy * speed_boost;
 
-    if (next_x < 0.035f || next_x > 0.965f)
+    if (next_x < wall_margin || next_x > 1.0f - wall_margin)
     {
         sys->ball_vx = -sys->ball_vx;
-        if (next_x < 0.035f)
-            next_x = 0.035f;
+        if (next_x < wall_margin)
+            next_x = wall_margin;
         else
-            next_x = 0.965f;
+            next_x = 1.0f - wall_margin;
         sys->ball_x = next_x;
         next_x = sys->ball_x + sys->ball_vx * speed_boost;
     }
