@@ -76,6 +76,7 @@ struct filter_sys_t
     bool game_initialized;
     bool silence_reset_done;
     DWORD silence_start_tick;
+    unsigned game_score;
     float sample_history[VISUALIZER_MAX_FFT_SIZE];
     size_t sample_history_pos;
     size_t sample_history_count;
