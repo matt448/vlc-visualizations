@@ -345,6 +345,7 @@ static block_t *Filter(filter_t *filter, block_t *block)
         return NULL;
 
     visualizer_sys_t *sys = filter->p_sys;
+    const DWORD metadata_update_delay_ms = 3000;
 
     DWORD now = GetTickCount();
     if (now - sys->last_meta_tick > 1000)
@@ -356,8 +357,24 @@ static block_t *Filter(filter_t *filter, block_t *block)
         utf8_to_wide(metadata, wide, ARRAYSIZE(wide));
 
         EnterCriticalSection(&sys->lock);
-        wcsncpy(sys->track_text, wide, ARRAYSIZE(sys->track_text) - 1);
-        sys->track_text[ARRAYSIZE(sys->track_text) - 1] = L'\0';
+        if (wcscmp(sys->track_text, wide) == 0)
+        {
+            sys->pending_track_text[0] = L'\0';
+            sys->pending_meta_tick = 0;
+        }
+        else if (wcscmp(sys->pending_track_text, wide) != 0)
+        {
+            wcsncpy(sys->pending_track_text, wide, ARRAYSIZE(sys->pending_track_text) - 1);
+            sys->pending_track_text[ARRAYSIZE(sys->pending_track_text) - 1] = L'\0';
+            sys->pending_meta_tick = now;
+        }
+        else if (now - sys->pending_meta_tick >= metadata_update_delay_ms)
+        {
+            wcsncpy(sys->track_text, sys->pending_track_text, ARRAYSIZE(sys->track_text) - 1);
+            sys->track_text[ARRAYSIZE(sys->track_text) - 1] = L'\0';
+            sys->pending_track_text[0] = L'\0';
+            sys->pending_meta_tick = 0;
+        }
         LeaveCriticalSection(&sys->lock);
 
         sys->last_meta_tick = now;
@@ -393,6 +410,7 @@ int visualizer_open(vlc_object_t *object, const visualizer_config_t *config)
     sys->config = config;
     InitializeCriticalSection(&sys->lock);
     wcscpy(sys->track_text, L"Waiting for track metadata...");
+    sys->pending_track_text[0] = L'\0';
     if (!create_render_surface(sys, config->video_width, config->video_height))
     {
         DeleteCriticalSection(&sys->lock);

@@ -405,10 +405,10 @@ static void Close(vlc_object_t *object)
 }
 
 vlc_module_begin()
-    set_shortname("Breakout")
-    set_description("Breakout-inspired audio visualization with frequency bricks")
+    set_shortname("Breakout Chill")
+    set_description("Chill Breakout-inspired audio visualization with frequency bricks")
     set_capability("visualization", 0)
     set_subcategory(SUBCAT_AUDIO_VISUAL)
-    add_shortcut("breakout", "breakout_visualizer")
+    add_shortcut("breakout_chill", "breakout", "breakout_visualizer")
     set_callbacks(Open, Close)
 vlc_module_end()
