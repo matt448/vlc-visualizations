@@ -73,62 +73,93 @@ static void initialize_game(visualizer_sys_t *sys)
     sys->game_initialized = true;
 }
 
+static void toggle_player(visualizer_sys_t *sys)
+{
+    sys->game_player = sys->game_player == 1 ? 2 : 1;
+}
+
 static void reset_bricks_for_track(visualizer_sys_t *sys)
 {
     if (wcscmp(sys->game_track_text, sys->track_text) == 0)
         return;
 
+    if (sys->game_track_text[0] == L'\0')
+        sys->game_player = 1;
+    else
+        toggle_player(sys);
+
     memset(sys->brick_broken, 0, sizeof(sys->brick_broken));
     memset(sys->brick_flash_frames, 0, sizeof(sys->brick_flash_frames));
     memset(sys->brick_flash_rows, 0, sizeof(sys->brick_flash_rows));
+    memset(sys->brick_restore_flash_frames, 0, sizeof(sys->brick_restore_flash_frames));
+    memset(sys->brick_restore_flash_rows, 0, sizeof(sys->brick_restore_flash_rows));
     wcsncpy(sys->game_track_text, sys->track_text, ARRAYSIZE(sys->game_track_text) - 1);
     sys->game_track_text[ARRAYSIZE(sys->game_track_text) - 1] = L'\0';
     sys->game_initialized = false;
-    sys->silence_reset_done = false;
-    sys->silence_start_tick = 0;
+    sys->brick_restore_tick = 0;
+    sys->brick_restore_milestone = 100;
     sys->game_score = 0;
 }
 
-static void reset_bricks_after_silence(visualizer_sys_t *sys)
+static void update_brick_restore(visualizer_sys_t *sys)
 {
-    memset(sys->brick_broken, 0, sizeof(sys->brick_broken));
-    memset(sys->brick_flash_frames, 0, sizeof(sys->brick_flash_frames));
-    memset(sys->brick_flash_rows, 0, sizeof(sys->brick_flash_rows));
-    sys->game_initialized = false;
-    sys->game_score = 0;
-}
-
-static void update_silence_reset(visualizer_sys_t *sys, float rms)
-{
-    const DWORD silence_reset_delay_ms = 500;
-    const float bar_threshold = 0.015f;
-    const float rms_threshold = 0.0025f;
-    bool silent = rms < rms_threshold;
-
-    for (int i = 0; i < BAR_COUNT && silent; ++i)
-    {
-        if (sys->bars[i] > bar_threshold)
-            silent = false;
-    }
-
+    const DWORD restore_delay_ms = 250;
     DWORD now = GetTickCount();
-    if (!silent)
+    unsigned broken_count = 0;
+    unsigned selected;
+    unsigned seen = 0;
+
+    if (sys->brick_restore_milestone == 0)
+        sys->brick_restore_milestone = 100;
+
+    if (sys->game_score < sys->brick_restore_milestone)
     {
-        sys->silence_start_tick = 0;
-        sys->silence_reset_done = false;
+        sys->brick_restore_tick = 0;
         return;
     }
 
-    if (sys->silence_start_tick == 0)
+    if (sys->brick_restore_tick == 0)
     {
-        sys->silence_start_tick = now;
+        sys->brick_restore_tick = now;
         return;
     }
 
-    if (!sys->silence_reset_done && now - sys->silence_start_tick >= silence_reset_delay_ms)
+    if (now - sys->brick_restore_tick < restore_delay_ms)
+        return;
+
+    for (int col = 0; col < BAR_COUNT; ++col)
     {
-        reset_bricks_after_silence(sys);
-        sys->silence_reset_done = true;
+        for (int row = 0; row < BRICK_ROWS; ++row)
+        {
+            if (sys->brick_broken[col][row])
+                broken_count++;
+        }
+    }
+
+    sys->brick_restore_tick = now;
+    if (broken_count == 0)
+    {
+        sys->brick_restore_milestone += 100;
+        return;
+    }
+
+    selected = (unsigned)((now * 1103515245u + sys->game_score * 12345u) % broken_count);
+    for (int col = 0; col < BAR_COUNT; ++col)
+    {
+        for (int row = 0; row < BRICK_ROWS; ++row)
+        {
+            if (!sys->brick_broken[col][row])
+                continue;
+
+            if (seen == selected)
+            {
+                sys->brick_broken[col][row] = 0;
+                sys->brick_restore_flash_frames[col] = 8;
+                sys->brick_restore_flash_rows[col] = row;
+                return;
+            }
+            seen++;
+        }
     }
 }
 
@@ -362,10 +393,12 @@ static void breakout_analyze(visualizer_sys_t *sys, const float *samples, size_t
             sys->brick_energy[i] = value;
         if (sys->brick_flash_frames[i] > 0)
             sys->brick_flash_frames[i]--;
+        if (sys->brick_restore_flash_frames[i] > 0)
+            sys->brick_restore_flash_frames[i]--;
     }
 
     sys->overall_level = sys->overall_level * 0.86f + fminf(rms * 7.0f, 1.0f) * 0.14f;
-    update_silence_reset(sys, rms);
+    update_brick_restore(sys);
     update_game_motion(sys);
     LeaveCriticalSection(&sys->lock);
 }
@@ -434,12 +467,15 @@ static void breakout_draw(visualizer_sys_t *sys)
     float bricks[BAR_COUNT];
     unsigned flashes[BAR_COUNT];
     int flash_rows[BAR_COUNT];
+    unsigned restore_flashes[BAR_COUNT];
+    int restore_flash_rows[BAR_COUNT];
     uint8_t broken[BAR_COUNT][32];
     float ball_x;
     float ball_y;
     float paddle_x;
     float level;
     unsigned score;
+    unsigned player;
     wchar_t track_text[512];
     RECT rc = { 0, 0, sys->render_width, sys->render_height };
 
@@ -448,12 +484,15 @@ static void breakout_draw(visualizer_sys_t *sys)
     memcpy(bricks, sys->brick_energy, sizeof(bricks));
     memcpy(flashes, sys->brick_flash_frames, sizeof(flashes));
     memcpy(flash_rows, sys->brick_flash_rows, sizeof(flash_rows));
+    memcpy(restore_flashes, sys->brick_restore_flash_frames, sizeof(restore_flashes));
+    memcpy(restore_flash_rows, sys->brick_restore_flash_rows, sizeof(restore_flash_rows));
     memcpy(broken, sys->brick_broken, sizeof(broken));
     ball_x = sys->ball_x;
     ball_y = sys->ball_y;
     paddle_x = sys->paddle_x;
     level = sys->overall_level;
     score = sys->game_score;
+    player = sys->game_player == 2 ? 2 : 1;
     wcsncpy(track_text, sys->track_text, ARRAYSIZE(track_text) - 1);
     track_text[ARRAYSIZE(track_text) - 1] = L'\0';
     LeaveCriticalSection(&sys->lock);
@@ -495,7 +534,9 @@ static void breakout_draw(visualizer_sys_t *sys)
 
     RECT player_rc = { sys->render_width - side_pad - 180, 14,
                        sys->render_width - side_pad, top - 6 };
-    DrawTextW(sys->render_dc, L"PLAYER 1", -1, &player_rc,
+    wchar_t player_text[32];
+    swprintf(player_text, ARRAYSIZE(player_text), L"PLAYER %u", player);
+    DrawTextW(sys->render_dc, player_text, -1, &player_rc,
               DT_RIGHT | DT_SINGLELINE | DT_VCENTER);
 
     SelectObject(sys->render_dc, old_score_font);
@@ -511,13 +552,15 @@ static void breakout_draw(visualizer_sys_t *sys)
             int from_bottom = rows - row - 1;
             float energy = bricks[col];
             bool is_flashing = flashes[col] > 0 && flash_rows[col] == row;
+            bool is_restore_flashing = restore_flashes[col] > 0 && restore_flash_rows[col] == row;
             if (broken[col][row] && !is_flashing)
                 continue;
 
             if (from_bottom >= lit_rows)
                 energy *= 0.22f;
 
-            COLORREF color = is_flashing ? flash_color(row) : brick_color(row, energy);
+            COLORREF color = is_restore_flashing ? RGB(245, 252, 255) :
+                             (is_flashing ? flash_color(row) : brick_color(row, energy));
             HBRUSH brush = CreateSolidBrush(color);
             RECT brick = {
                 x,

@@ -38,9 +38,7 @@ That means you need 64-bit Windows builds of these plugins. See [docs/WINDOWS.md
 - `led_segments`: 31-band LED-segment visualization with frequency labels, current track/stream text, and green, yellow, and red level sections.
 - `led_peaks`: 31-band LED-segment visualization with hardware-style peak hold indicators that pause briefly, then fall slowly.
 - `breakout_chill`: Breakout-inspired visualization with frequency-reactive bricks, an auto-playing paddle, and a relaxed game feel.
-- `breakout_advanced`: Breakout-inspired visualization with song-long brick breaking, score, player HUD, and a smaller arcade-style square ball.
-
-`breakout_advanced` treats the brick wall like part of the music display. A brick only breaks when the ball hits it while that brick is active from the current frequency signal. Each broken brick is worth one point. Broken bricks stay gone for the current song, then the wall and score reset when the track changes. If stream metadata does not change, the wall also resets after a short silence gap between songs.
+- `breakout_advanced`: Breakout-inspired visualization with song-long brick breaking, score, player HUD, and a smaller arcade-style square ball. `breakout_advanced` treats the brick wall like part of the music display. A brick only breaks when the ball hits it while that brick is active from the current frequency signal. Each broken brick is worth one point. Once the score reaches 100 points, the game starts adding random broken bricks back to the wall. When the track metadata changes, the bricks refresh, the score resets, and the player indicator alternates between Player 1 and Player 2.
 
 ## Prerequisites
 

@@ -65,6 +65,8 @@ struct filter_sys_t
     float brick_energy[VISUALIZER_MAX_BARS];
     unsigned brick_flash_frames[VISUALIZER_MAX_BARS];
     int brick_flash_rows[VISUALIZER_MAX_BARS];
+    unsigned brick_restore_flash_frames[VISUALIZER_MAX_BARS];
+    int brick_restore_flash_rows[VISUALIZER_MAX_BARS];
     uint8_t brick_broken[VISUALIZER_MAX_BARS][32];
     wchar_t game_track_text[512];
     float ball_x;
@@ -74,9 +76,10 @@ struct filter_sys_t
     float paddle_x;
     float overall_level;
     bool game_initialized;
-    bool silence_reset_done;
-    DWORD silence_start_tick;
+    DWORD brick_restore_tick;
+    unsigned brick_restore_milestone;
     unsigned game_score;
+    unsigned game_player;
     float sample_history[VISUALIZER_MAX_FFT_SIZE];
     size_t sample_history_pos;
     size_t sample_history_count;

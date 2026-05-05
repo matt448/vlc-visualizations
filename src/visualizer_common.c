@@ -38,6 +38,151 @@ static void utf8_to_wide(const char *src, wchar_t *dst, size_t dst_len)
     dst[dst_len - 1] = L'\0';
 }
 
+static bool append_wide_char(wchar_t *dst, size_t dst_len, size_t *pos, wchar_t ch)
+{
+    if (*pos + 1 >= dst_len)
+        return false;
+
+    dst[*pos] = ch;
+    (*pos)++;
+    return true;
+}
+
+static bool parse_numeric_entity(const wchar_t *src, size_t *consumed, wchar_t *decoded)
+{
+    unsigned value = 0;
+    size_t i = 2;
+    int base = 10;
+
+    if (src[0] != L'&' || src[1] != L'#')
+        return false;
+
+    if (src[i] == L'x' || src[i] == L'X')
+    {
+        base = 16;
+        i++;
+    }
+
+    if (src[i] == L'\0' || src[i] == L';')
+        return false;
+
+    for (; src[i] != L'\0' && src[i] != L';'; ++i)
+    {
+        unsigned digit;
+
+        if (src[i] >= L'0' && src[i] <= L'9')
+            digit = (unsigned)(src[i] - L'0');
+        else if (base == 16 && src[i] >= L'a' && src[i] <= L'f')
+            digit = 10u + (unsigned)(src[i] - L'a');
+        else if (base == 16 && src[i] >= L'A' && src[i] <= L'F')
+            digit = 10u + (unsigned)(src[i] - L'A');
+        else
+            return false;
+
+        if (digit >= (unsigned)base || value > 0xffffu / (unsigned)base)
+            return false;
+
+        value = value * (unsigned)base + digit;
+    }
+
+    if (src[i] != L';')
+        return false;
+
+    switch (value)
+    {
+        case 160:
+            *decoded = L' ';
+            break;
+        case 8216:
+        case 8217:
+            *decoded = L'\'';
+            break;
+        case 8220:
+        case 8221:
+            *decoded = L'"';
+            break;
+        case 8211:
+        case 8212:
+            *decoded = L'-';
+            break;
+        default:
+            if (value < 32 || value > 0xffffu)
+                return false;
+            *decoded = (wchar_t)value;
+            break;
+    }
+
+    *consumed = i + 1;
+    return true;
+}
+
+static bool parse_named_entity(const wchar_t *src, size_t *consumed, wchar_t *decoded)
+{
+    struct entity
+    {
+        const wchar_t *name;
+        wchar_t ch;
+    };
+    static const struct entity entities[] = {
+        { L"&amp;", L'&' },
+        { L"&apos;", L'\'' },
+        { L"&gt;", L'>' },
+        { L"&lt;", L'<' },
+        { L"&quot;", L'"' },
+        { L"&nbsp;", L' ' },
+        { L"&rsquo;", L'\'' },
+        { L"&lsquo;", L'\'' },
+        { L"&rdquo;", L'"' },
+        { L"&ldquo;", L'"' },
+        { L"&ndash;", L'-' },
+        { L"&mdash;", L'-' },
+    };
+
+    for (size_t i = 0; i < ARRAYSIZE(entities); ++i)
+    {
+        size_t len = wcslen(entities[i].name);
+        if (wcsncmp(src, entities[i].name, len) == 0)
+        {
+            *consumed = len;
+            *decoded = entities[i].ch;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void decode_html_entities(wchar_t *text)
+{
+    wchar_t decoded[512];
+    size_t in_pos = 0;
+    size_t out_pos = 0;
+
+    while (text[in_pos] != L'\0' && out_pos + 1 < ARRAYSIZE(decoded))
+    {
+        size_t consumed = 0;
+        wchar_t ch = L'\0';
+
+        if (text[in_pos] == L'&' &&
+            (parse_numeric_entity(text + in_pos, &consumed, &ch) ||
+             parse_named_entity(text + in_pos, &consumed, &ch)))
+        {
+            if (!append_wide_char(decoded, ARRAYSIZE(decoded), &out_pos, ch))
+                break;
+            in_pos += consumed;
+            continue;
+        }
+
+        if (!append_wide_char(decoded, ARRAYSIZE(decoded), &out_pos, text[in_pos]))
+            break;
+        in_pos++;
+    }
+
+    decoded[out_pos] = L'\0';
+    wcsncpy(text, decoded, 512 - 1);
+    text[512 - 1] = L'\0';
+}
+
 typedef struct
 {
     DWORD process_id;
@@ -355,6 +500,7 @@ static block_t *Filter(filter_t *filter, block_t *block)
 
         wchar_t wide[512];
         utf8_to_wide(metadata, wide, ARRAYSIZE(wide));
+        decode_html_entities(wide);
 
         EnterCriticalSection(&sys->lock);
         if (wcscmp(sys->track_text, wide) == 0)
