@@ -20,6 +20,7 @@
 #define BRICK_HEIGHT 6
 #define FIELD_BOTTOM_PAD 100
 #define PADDLE_WIDTH 70
+#define MAX_SCORE 99999u
 
 static void breakout_band_range(int bar, unsigned sample_rate, int *start, int *end)
 {
@@ -79,6 +80,18 @@ static void toggle_player(visualizer_sys_t *sys)
     sys->game_player = sys->game_player == 1 ? 2 : 1;
 }
 
+static void reset_brick_wall(visualizer_sys_t *sys)
+{
+    memset(sys->brick_broken, 0, sizeof(sys->brick_broken));
+    memset(sys->brick_flash_frames, 0, sizeof(sys->brick_flash_frames));
+    memset(sys->brick_flash_rows, 0, sizeof(sys->brick_flash_rows));
+    memset(sys->brick_restore_flash_frames, 0, sizeof(sys->brick_restore_flash_frames));
+    memset(sys->brick_restore_flash_rows, 0, sizeof(sys->brick_restore_flash_rows));
+    sys->game_initialized = false;
+    sys->brick_restore_tick = 0;
+    sys->brick_restore_milestone = 100;
+}
+
 static void reset_bricks_for_track(visualizer_sys_t *sys)
 {
     if (wcscmp(sys->game_track_text, sys->track_text) == 0)
@@ -89,16 +102,9 @@ static void reset_bricks_for_track(visualizer_sys_t *sys)
     else
         toggle_player(sys);
 
-    memset(sys->brick_broken, 0, sizeof(sys->brick_broken));
-    memset(sys->brick_flash_frames, 0, sizeof(sys->brick_flash_frames));
-    memset(sys->brick_flash_rows, 0, sizeof(sys->brick_flash_rows));
-    memset(sys->brick_restore_flash_frames, 0, sizeof(sys->brick_restore_flash_frames));
-    memset(sys->brick_restore_flash_rows, 0, sizeof(sys->brick_restore_flash_rows));
+    reset_brick_wall(sys);
     wcsncpy(sys->game_track_text, sys->track_text, ARRAYSIZE(sys->game_track_text) - 1);
     sys->game_track_text[ARRAYSIZE(sys->game_track_text) - 1] = L'\0';
-    sys->game_initialized = false;
-    sys->brick_restore_tick = 0;
-    sys->brick_restore_milestone = 100;
     sys->game_score = 0;
 }
 
@@ -235,7 +241,15 @@ static bool break_touched_lit_brick(visualizer_sys_t *sys, float previous_x, flo
             sys->brick_energy[col] = 1.0f;
             sys->brick_flash_frames[col] = 10;
             sys->brick_flash_rows[col] = row;
-            sys->game_score++;
+            if (sys->game_score >= MAX_SCORE)
+            {
+                sys->game_score = 0;
+                reset_brick_wall(sys);
+            }
+            else
+            {
+                sys->game_score++;
+            }
             *collision_axis = brick_collision_axis(previous_px, previous_py, brick);
             return true;
         }
