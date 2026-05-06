@@ -300,8 +300,6 @@ static void update_game_motion(visualizer_sys_t *sys)
             next_x = wall_margin;
         else
             next_x = 1.0f - wall_margin;
-        sys->ball_x = next_x;
-        next_x = sys->ball_x + sys->ball_vx * speed_boost;
     }
 
     if (next_y < 0.08f)
