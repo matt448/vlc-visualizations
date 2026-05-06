@@ -19,6 +19,7 @@
 #define BRICK_GAP 1
 #define BRICK_HEIGHT 6
 #define FIELD_BOTTOM_PAD 100
+#define PADDLE_WIDTH 70
 
 static void breakout_band_range(int bar, unsigned sample_rate, int *start, int *end)
 {
@@ -246,11 +247,15 @@ static bool break_touched_lit_brick(visualizer_sys_t *sys, float previous_x, flo
 static void update_game_motion(visualizer_sys_t *sys)
 {
     const float paddle_y = 0.965f;
-    const float paddle_half_width = 0.090f;
-    const float wall_margin = (float)BALL_HALF_SIZE / (float)(VIDEO_WIDTH - FIELD_SIDE_PAD * 2);
+    const float field_width = (float)(VIDEO_WIDTH - FIELD_SIDE_PAD * 2);
+    const float paddle_visual_half_width = ((float)PADDLE_WIDTH * 0.5f) / field_width;
+    const float paddle_collision_half_width = ((float)PADDLE_WIDTH * 0.5f + (float)BALL_HALF_SIZE) / field_width;
+    const float wall_margin = (float)BALL_HALF_SIZE / field_width;
     const float speed_boost = 0.88f;
     float target_x;
     float follow_rate;
+    float paddle_delta;
+    float max_paddle_step;
     float next_x;
     float next_y;
     int collision_axis = 1;
@@ -258,12 +263,18 @@ static void update_game_motion(visualizer_sys_t *sys)
     initialize_game(sys);
 
     target_x = sys->ball_vy > 0.0f ? sys->ball_x : 0.5f + (sys->ball_x - 0.5f) * 0.35f;
-    follow_rate = sys->ball_vy > 0.0f ? 0.22f : 0.08f;
-    sys->paddle_x += (target_x - sys->paddle_x) * follow_rate;
-    if (sys->paddle_x < paddle_half_width)
-        sys->paddle_x = paddle_half_width;
-    if (sys->paddle_x > 1.0f - paddle_half_width)
-        sys->paddle_x = 1.0f - paddle_half_width;
+    follow_rate = sys->ball_vy > 0.0f ? 0.44f : 0.08f;
+    max_paddle_step = sys->ball_vy > 0.0f ? 0.050f : 0.018f;
+    paddle_delta = (target_x - sys->paddle_x) * follow_rate;
+    if (paddle_delta < -max_paddle_step)
+        paddle_delta = -max_paddle_step;
+    if (paddle_delta > max_paddle_step)
+        paddle_delta = max_paddle_step;
+    sys->paddle_x += paddle_delta;
+    if (sys->paddle_x < paddle_visual_half_width)
+        sys->paddle_x = paddle_visual_half_width;
+    if (sys->paddle_x > 1.0f - paddle_visual_half_width)
+        sys->paddle_x = 1.0f - paddle_visual_half_width;
 
     next_x = sys->ball_x + sys->ball_vx * speed_boost;
     next_y = sys->ball_y + sys->ball_vy * speed_boost;
@@ -288,9 +299,9 @@ static void update_game_motion(visualizer_sys_t *sys)
     if (sys->ball_vy > 0.0f && sys->ball_y < paddle_y && next_y >= paddle_y)
     {
         float distance = fabsf(next_x - sys->paddle_x);
-        if (distance < paddle_half_width)
+        if (distance <= paddle_collision_half_width)
         {
-            float english = (next_x - sys->paddle_x) / paddle_half_width;
+            float english = (next_x - sys->paddle_x) / paddle_collision_half_width;
             sys->ball_vy = -fabsf(sys->ball_vy);
             sys->ball_vx += english * 0.006f;
             if (sys->ball_vx < -0.012f)
@@ -511,10 +522,10 @@ static void breakout_draw(visualizer_sys_t *sys)
 
     HPEN rail_pen = CreatePen(PS_SOLID, 2, RGB(42, 55, 66));
     HGDIOBJ old_pen = SelectObject(sys->render_dc, rail_pen);
-    MoveToEx(sys->render_dc, side_pad - 12, top - 18, NULL);
-    LineTo(sys->render_dc, side_pad - 12, sys->render_height - 92);
-    MoveToEx(sys->render_dc, sys->render_width - side_pad + 12, top - 18, NULL);
-    LineTo(sys->render_dc, sys->render_width - side_pad + 12, sys->render_height - 92);
+    MoveToEx(sys->render_dc, side_pad, top - 18, NULL);
+    LineTo(sys->render_dc, side_pad, sys->render_height - 92);
+    MoveToEx(sys->render_dc, sys->render_width - side_pad, top - 18, NULL);
+    LineTo(sys->render_dc, sys->render_width - side_pad, sys->render_height - 92);
     SelectObject(sys->render_dc, old_pen);
     DeleteObject(rail_pen);
 
@@ -581,7 +592,7 @@ static void breakout_draw(visualizer_sys_t *sys)
     int ball_py = field_top + (int)(ball_y * (float)(field_bottom - field_top));
     draw_ball(sys->render_dc, ball_px, ball_py, BALL_HALF_SIZE, level);
 
-    int paddle_w = 70 + (int)(level * 26.0f);
+    int paddle_w = PADDLE_WIDTH;
     int paddle_h = 13;
     int paddle_center = field_left + (int)(paddle_x * (float)(field_right - field_left));
     HBRUSH paddle_brush = CreateSolidBrush(RGB(116, 232, 255));
